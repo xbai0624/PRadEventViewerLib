@@ -57,6 +57,7 @@ GEMHit::GEMHit(int hitID, int apvID, int chNo,
       fPlaneID = 2;
       exit(-1);
   }
+
   fDetector          = gem_srs->GetDetectorByAPV(fec, adc)->name;
   fDetectorID        = gem_srs->GetDetectorByAPV(fec, adc)->id;
   fDetectorType      = gem_srs->GetDetectorByAPV(fec, adc)->type;
@@ -1033,6 +1034,8 @@ void PRadGEMReconstructor::HyCalGEMPosMatch()
   auto hycal_hit = fHandler->GetHyCalCluster(*event);
 
   Match(gem1_beaml, gem2_beaml, &hycal_hit);
+  
+  hycal_hit.clear();
 
   // after match
   if(gem1_beaml.size() > 0)
