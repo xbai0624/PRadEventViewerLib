@@ -13,9 +13,10 @@
 
 using namespace std;
 
-class PRDMapping;
 class PRadGEMSystem;
 class PRadGEMAPV;
+class PRadGEMFEC;
+class PRadGEMDET;
 class PRadEventStruct;
 class PRadDataHandler;
 class PRadDSTParser;
@@ -29,7 +30,7 @@ public:
       fHandler = handler;
   }
 
-  GEMHit();
+  GEMHit(){};
   GEMHit(int hitID, int apvID, 
          int chNo, int zeroSupCut, TString isHitMaxOrTotalADCs);
   ~GEMHit();
@@ -117,8 +118,8 @@ private:
 
   int NCH;
 
-  PRDMapping * mapping;
-  PRadGEMSystem * gem_srs;
+
+  static PRadGEMSystem * gem_srs;
 
 };
 
@@ -131,6 +132,7 @@ public:
       fHandler = handler;
   }
 
+  GEMCluster(){}
   GEMCluster(int minClusterSize, int maxClusterSize, TString isMaximumOrTotalCharges);
   ~GEMCluster();
 
@@ -222,7 +224,7 @@ private:
   bool fIsGoodCluster;
   vector<float> fClusterTimeBinADCs;
 
-  PRadGEMSystem * gem_srs;
+  static PRadGEMSystem * gem_srs;
 };
 
 struct PRadGEMCluster
@@ -262,6 +264,7 @@ public:
       fHandler = handler;
   }
 
+  GEMZeroHitDecoder(){}
   GEMZeroHitDecoder(vector<GEM_Data> * gemdata);
   ~GEMZeroHitDecoder();
 
@@ -298,7 +301,6 @@ private:
   int fAPVKey;
   TString fIsHitMaxOrTotalADCs;
   TString fIsClusterMaxOrTotalADCs;
-  PRDMapping * fMapping;
   map<int, GEMHit*> fListOfHitsZero;
   map<TString, list<GEMHit*> > fListOfHitsZeroFromPlane;
 
@@ -307,7 +309,7 @@ private:
   double Zgem1;
   double Zgem2;
 
-  PRadGEMSystem * gem_srs;
+  static PRadGEMSystem * gem_srs;
 };
 
 class PRadGEMReconstructor
@@ -315,15 +317,12 @@ class PRadGEMReconstructor
 public:
 
   static PRadDataHandler *fHandler;
-  static void gSetHandler( PRadDataHandler *handler);
+  static void SetHandler( PRadDataHandler *handler);
 
   PRadGEMReconstructor( PRadDataHandler * handler);
   virtual ~PRadGEMReconstructor();
   //void InitConfig(const string &path); // to be implemented...
   void Clear();
-  void SetHandler(PRadDataHandler* h) {
-      fHandler = h; // for GEM HyCal Match
-  }
 
   vector<PRadGEMCluster> &CoarseGEMReconstruct(const int &event_index = -1);
   vector<PRadGEMCluster> &CoarseGEMReconstruct(EventData &event);
@@ -342,9 +341,7 @@ public:
   vector<PRadGEMCluster> &GEMClusteringBeamL(const int det);
 
 private:
-  PRDMapping *fMapping;
-  //PRadDataHandler *fHandler;
-  PRadGEMSystem *fPRadGEMSystem;
+  static PRadGEMSystem *gem_srs;
   EventData *event;
   GEMZeroHitDecoder *pDecode;
 

@@ -10,7 +10,6 @@
 #include <TH1F.h>
 
 #include "PRadGEMReconstructor.h"
-#include "PRDMapping.h"
 
 #include "PRadDataHandler.h"
 #include "PRadEventStruct.h"
@@ -18,6 +17,7 @@
 
 // GEMHit
 PRadDataHandler * GEMHit::fHandler = nullptr;
+PRadGEMSystem * GEMHit::gem_srs = nullptr;
 
 GEMHit::GEMHit(int hitID, int apvID, int chNo, 
                int zeroSupCut, TString isHitMaxOrTotalADCs)
@@ -27,20 +27,40 @@ GEMHit::GEMHit(int hitID, int apvID, int chNo,
       fHitADCs(-10000), fPeakADCs(0.0), fIntegratedADCs(0.0),
       fIsHitMaxOrTotalADCs(isHitMaxOrTotalADCs), NCH(128)
 {
+  SetHandler(PRadGEMReconstructor::fHandler);
   gem_srs = fHandler -> GetSRS();
   fTimeBinADCs.clear();
+ 
+  int fec = (fAPVID>>4)&0xf;
+  int adc = fAPVID&0xf;
 
-  mapping            = PRDMapping::GetInstance();
-  fAPVIndexOnPlane   = mapping->GetAPVIndexOnPlane(fAPVID);
-  fAPVOrientation    = mapping->GetAPVOrientation(fAPVID);
-  fPlane             = mapping->GetPlaneFromAPVID(fAPVID);
-  fPlaneID           = mapping->GetPlaneID(fPlane);
-  fDetector          = mapping->GetDetectorFromPlane(fPlane);
-  fDetectorID        = mapping->GetDetectorID(fDetector);
-  fDetectorType      = mapping->GetDetectorTypeFromDetector(fDetector);
-  fReadoutBoard      = mapping->GetReadoutBoardFromDetector(fDetector);
-  fPlaneSize         = mapping->GetPlaneSize(fPlane);
-  fNbOfAPVsOnPlane   = mapping->GetNbOfAPVsOnPlane(fPlane);
+  fAPVIndexOnPlane   = gem_srs->GetAPV( fec, adc )->plane_index;
+  fAPVOrientation    = gem_srs->GetAPV( fec, adc )->orient;
+  fPlane             = gem_srs->GetAPV( fec, adc )->plane;
+  
+  if( fPlane.Contains("X"))
+  {
+      fPlaneID = 0;
+      fPlaneSize = gem_srs->GetDetectorByAPV(fec, adc)->planes[0].size;
+      fNbOfAPVsOnPlane = gem_srs->GetDetectorByAPV(fec, adc)->planes[0].connector;
+  }
+  else if( fPlane.Contains("Y"))
+  {
+      fPlaneID = 1;
+      fPlaneSize = gem_srs->GetDetectorByAPV(fec, adc)->planes[1].size;
+      fNbOfAPVsOnPlane = gem_srs->GetDetectorByAPV(fec, adc)->planes[1].connector;
+  }
+  else
+  {
+      cout<<"GEMHit: Wrong Plane..."
+          << endl;
+      fPlaneID = 2;
+      exit(-1);
+  }
+  fDetector          = gem_srs->GetDetectorByAPV(fec, adc)->name;
+  fDetectorID        = gem_srs->GetDetectorByAPV(fec, adc)->id;
+  fDetectorType      = gem_srs->GetDetectorByAPV(fec, adc)->type;
+  fReadoutBoard      = gem_srs->GetDetectorByAPV(fec, adc)->readout_board;
 
   SetStripNo();
   ComputePosition();
@@ -49,7 +69,7 @@ GEMHit::GEMHit(int hitID, int apvID, int chNo,
 GEMHit::~GEMHit()
 {
   fTimeBinADCs.clear();
-  gem_srs -> Clear();
+  //gem_srs -> Clear();
 }
 
 void GEMHit::TimingFindPeakTimeBin() 
@@ -178,6 +198,7 @@ int GEMHit::PRadStripMapping(int chNo)
 
 // GEMCluster
 PRadDataHandler * GEMCluster::fHandler = nullptr;
+PRadGEMSystem * GEMCluster::gem_srs = nullptr;
 
 GEMCluster::GEMCluster(int minClusterSize, int maxClusterSize, TString isMaxorTotalADCs)
 
@@ -189,6 +210,7 @@ GEMCluster::GEMCluster(int minClusterSize, int maxClusterSize, TString isMaxorTo
       fIsClusterMaxOrSumADCs(isMaxorTotalADCs), fPlane("GEM1X"),
       fIsGoodCluster(true)
 {
+  SetHandler(PRadGEMReconstructor::fHandler);
   gem_srs = fHandler -> GetSRS();
 
   fArrayOfHits = new TObjArray(maxClusterSize);
@@ -199,7 +221,7 @@ GEMCluster::~GEMCluster()
   fArrayOfHits->Clear();
   delete fArrayOfHits;
   fClusterTimeBinADCs.clear() ;
-  gem_srs -> Clear();
+  //gem_srs -> Clear();
 }
 
 void GEMCluster::Timing() 
@@ -325,6 +347,7 @@ void GEMCluster::ComputeClusterPosition()
 
 // GEMZeroHitDecoder
 PRadDataHandler * GEMZeroHitDecoder::fHandler = nullptr;
+PRadGEMSystem * GEMZeroHitDecoder::gem_srs = nullptr;
 
 GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
 
@@ -334,9 +357,9 @@ GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
       fIsClusterMaxOrTotalADCs("totalADCs"), gem_data(gemdata),
       nTimeBin(3), Zgem1(5300.0), Zgem2(5260.)
 {
+  SetHandler(PRadGEMReconstructor::fHandler);
   gem_srs = fHandler -> GetSRS();
 
-  fMapping = PRDMapping::GetInstance();
   fListOfHitsZero.clear();
   fListOfHitsZeroFromPlane.clear();
   fListOfClustersZeroFromPlane.clear();
@@ -347,7 +370,7 @@ GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
 GEMZeroHitDecoder::~GEMZeroHitDecoder()
 {
   Clear();
-  gem_srs -> Clear();
+  //gem_srs -> Clear();
 }
 
 void GEMZeroHitDecoder::Clear()
@@ -413,7 +436,7 @@ void GEMZeroHitDecoder::EventHandler()
       adc = gem_data->at(i).values[ts];
 
       fAPVID = (fFECID<<4)|fADCChannel;
-      fAPVKey = fMapping->GetAPVNoFromID(fAPVID);
+      fAPVKey = gem_srs->GetAPV(fFECID, fADCChannel)->apv_key;
       int hitID = (fAPVKey << 8) | chNo ;
       /*
       cout<<"fec: "<<fFECID
@@ -449,29 +472,33 @@ void GEMZeroHitDecoder::GetListOfHitsZeroFromPlanes()
 TH1F* GEMZeroHitDecoder::GetZeroHit(TString str)
 {
   TH1F * h1;
-  int nbDetector = fMapping->GetNbOfDetectors();
+
+  int nbDetector = gem_srs->GetNbOfDetectors();
+
   for(int i=0;i<nbDetector;i++)
   {
-    TString detectorName = fMapping->GetDetectorFromID(i);
-    list<TString> planeList = fMapping->GetPlaneListFromDetector(detectorName);
-
-    list<TString>::iterator it;
-    for(it=planeList.begin();it!=planeList.end();++it)
-    {
-      if(*it == str)
+      TString detectorName = gem_srs->GetDetector(i)->name;
+      TString planeName = gem_srs->GetDetector(i)->GetPlaneX().name;
+      float planeSize = gem_srs->GetDetector(i)->GetPlaneX().size;
+      
+      if(str != planeName)
       {
-        TString hh = detectorName+"_"+(*it)+"_hit_distribution_zero_suppression";
-        h1 = new TH1F(hh, hh, 2000, -fMapping->GetPlaneSize(*it)/2-100, fMapping->GetPlaneSize(*it)/2+100 );
-        list< GEMHit* > hitList = fListOfHitsZeroFromPlane[ *it  ];
-        list< GEMHit* >::iterator hit_it;
-        for(hit_it=hitList.begin(); hit_it!=hitList.end();++hit_it)
-        {
-          Float_t pos = (*hit_it) -> GetStripPosition();
-          Float_t adc = (*hit_it) -> GetHitADCs();
-          h1 -> Fill(pos, adc);
-        }
+         planeName = gem_srs->GetDetector(i)->GetPlaneY().name;
+	 planeSize = gem_srs->GetDetector(i)->GetPlaneY().size;
+	 if(str!=planeName)
+	     continue;
       }
-    }
+
+      TString hh = detectorName+"_"+planeName+"_hit_distribution_zero_suppression";
+      h1 = new TH1F(hh, hh, 2000, -planeSize/2-100, planeSize/2+100 );
+      list< GEMHit* > hitList = fListOfHitsZeroFromPlane[ planeName  ];
+      list< GEMHit* >::iterator hit_it;
+      for(hit_it=hitList.begin(); hit_it!=hitList.end();++hit_it)
+      {
+        Float_t pos = (*hit_it) -> GetStripPosition();
+        Float_t adc = (*hit_it) -> GetHitADCs();
+        h1 -> Fill(pos, adc);
+      }
   }
 
   if(h1)
@@ -592,29 +619,31 @@ TH1F* GEMZeroHitDecoder::GetCluster(TString str)
 {
   TH1F * hc1;
 
-  int nbDetector = fMapping->GetNbOfDetectors();
+  int nbDetector = gem_srs->GetNbOfDetectors();
 
   for(int i=0;i<nbDetector;i++)
   {
-    TString detectorName = fMapping->GetDetectorFromID(i);
-    list<TString> planeList = fMapping->GetPlaneListFromDetector(detectorName);
+    TString detectorName = gem_srs->GetDetector(i)->name;
+    TString planeName = gem_srs->GetDetector(i)->GetPlaneX().name;
+    float planeSize = gem_srs->GetDetector(i)->GetPlaneX().size;
 
-    list<TString>::iterator it;
-    for(it=planeList.begin();it!=planeList.end();++it)
+    if(str != planeName)
     {
-      if(*it == str)
-      {
-        TString hh = detectorName+"_"+(*it)+"_Cluster_Distribution_zero_suppression";
-        hc1 = new TH1F(hh, hh, 2000, -fMapping->GetPlaneSize(*it)/2-100, fMapping->GetPlaneSize(*it)/2+100 );
-        list< GEMCluster* > clusterList = fListOfClustersZeroFromPlane[ *it  ];
-        list< GEMCluster* >::iterator cluster_it;
-        for(cluster_it=clusterList.begin(); cluster_it!=clusterList.end();++cluster_it)
-        {
-          Float_t pos = (*cluster_it) -> GetClusterPosition();
-          Float_t adc = (*cluster_it) -> GetClusterADCs();
-          hc1 -> Fill(pos, adc);
-        }
-      }
+        planeName = gem_srs->GetDetector(i)->GetPlaneY().name;
+	planeSize = gem_srs->GetDetector(i)->GetPlaneY().size;
+	if(str != planeName)
+	    continue;
+    }
+
+    TString hh = detectorName+"_"+planeName+"_Cluster_Distribution_zero_suppression";
+    hc1 = new TH1F(hh, hh, 2000, -planeSize/2-100, planeSize/2+100 );
+    list< GEMCluster* > clusterList = fListOfClustersZeroFromPlane[ planeName ];
+    list< GEMCluster* >::iterator cluster_it;
+    for(cluster_it=clusterList.begin(); cluster_it!=clusterList.end();++cluster_it)
+    {
+      Float_t pos = (*cluster_it) -> GetClusterPosition();
+      Float_t adc = (*cluster_it) -> GetClusterADCs();
+      hc1 -> Fill(pos, adc);
     }
   }
   if(hc1)
@@ -863,24 +892,24 @@ void GEMZeroHitDecoder::GetClusterGEM(vector<PRadGEMCluster> &gem1,
 
 // PRadGEMReconstructor
 PRadDataHandler * PRadGEMReconstructor::fHandler = nullptr;
+PRadGEMSystem * PRadGEMReconstructor::gem_srs = nullptr;
 
-void PRadGEMReconstructor::gSetHandler( PRadDataHandler * handler)
+void PRadGEMReconstructor::SetHandler( PRadDataHandler * handler)
 {
+  PRadGEMReconstructor::fHandler = handler;
   GEMHit::fHandler = handler;
   GEMCluster::fHandler = handler;
   GEMZeroHitDecoder::fHandler = handler;
-  PRadGEMReconstructor::fHandler = handler;
+  gem_srs = fHandler->GetSRS(); 
 }
 
 PRadGEMReconstructor::PRadGEMReconstructor( PRadDataHandler * handler)
-    : fPRadGEMSystem(nullptr), event(nullptr),
+    : event(nullptr),
       pDecode(nullptr), Zgem1(5300.0), Zgem2(5260), 
       Zhycal(5820.0), Match_Criteria(40.)
 {
-  gSetHandler(handler);
-  fPRadGEMSystem = fHandler -> GetSRS();
-
-  fMapping = PRDMapping::GetInstance();
+  SetHandler(handler);
+  gem_srs = fHandler -> GetSRS();
 
   fPRadGEMCluster.clear();
   gem1_local.clear();
@@ -889,13 +918,12 @@ PRadGEMReconstructor::PRadGEMReconstructor( PRadDataHandler * handler)
   gem2_hycal.clear();
   gem1_beaml.clear();
   gem2_beaml.clear();
-
 }
 
 PRadGEMReconstructor::~PRadGEMReconstructor()
 {
   Clear();
-  fPRadGEMSystem->Clear();
+  //if(gem_srs != nullptr) gem_srs->Clear();
 }
 
 void PRadGEMReconstructor::Clear() 
@@ -908,7 +936,6 @@ void PRadGEMReconstructor::Clear()
   gem1_beaml.clear();
   gem2_beaml.clear();
 
-  //fPRadGEMSystem->Clear();
 }
 
 vector<PRadGEMCluster> &PRadGEMReconstructor::CoarseGEMReconstruct(const int &event_index) 
