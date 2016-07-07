@@ -23,6 +23,12 @@ class PRadDSTParser;
 class GEMHit : public TObject
 {
 public:
+
+  static PRadDataHandler *fHandler;
+  static void SetHandler( PRadDataHandler *handler) {
+      fHandler = handler;
+  }
+
   GEMHit();
   GEMHit(int hitID, int apvID, 
          int chNo, int zeroSupCut, TString isHitMaxOrTotalADCs);
@@ -112,12 +118,19 @@ private:
   int NCH;
 
   PRDMapping * mapping;
+  PRadGEMSystem * gem_srs;
 
 };
 
 class GEMCluster : public TObject
 {
 public:
+
+  static PRadDataHandler *fHandler;
+  static void SetHandler( PRadDataHandler *handler) {
+      fHandler = handler;
+  }
+
   GEMCluster(int minClusterSize, int maxClusterSize, TString isMaximumOrTotalCharges);
   ~GEMCluster();
 
@@ -208,6 +221,8 @@ private:
   TString fIsClusterMaxOrSumADCs, fPlane;
   bool fIsGoodCluster;
   vector<float> fClusterTimeBinADCs;
+
+  PRadGEMSystem * gem_srs;
 };
 
 struct PRadGEMCluster
@@ -241,6 +256,12 @@ struct PRadGEMCluster
 class GEMZeroHitDecoder
 {
 public:
+
+  static PRadDataHandler *fHandler;
+  static void SetHandler( PRadDataHandler *handler) {
+      fHandler = handler;
+  }
+
   GEMZeroHitDecoder(vector<GEM_Data> * gemdata);
   ~GEMZeroHitDecoder();
 
@@ -285,12 +306,18 @@ private:
   int nTimeBin; 
   double Zgem1;
   double Zgem2;
+
+  PRadGEMSystem * gem_srs;
 };
 
 class PRadGEMReconstructor
 {
 public:
-  PRadGEMReconstructor(PRadDataHandler *h = nullptr);
+
+  static PRadDataHandler *fHandler;
+  static void gSetHandler( PRadDataHandler *handler);
+
+  PRadGEMReconstructor( PRadDataHandler * handler);
   virtual ~PRadGEMReconstructor();
   //void InitConfig(const string &path); // to be implemented...
   void Clear();
@@ -316,7 +343,7 @@ public:
 
 private:
   PRDMapping *fMapping;
-  PRadDataHandler *fHandler;
+  //PRadDataHandler *fHandler;
   PRadGEMSystem *fPRadGEMSystem;
   EventData *event;
   GEMZeroHitDecoder *pDecode;

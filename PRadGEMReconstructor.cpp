@@ -17,6 +17,8 @@
 #include "PRadGEMSystem.h"
 
 // GEMHit
+PRadDataHandler * GEMHit::fHandler = nullptr;
+
 GEMHit::GEMHit(int hitID, int apvID, int chNo, 
                int zeroSupCut, TString isHitMaxOrTotalADCs)
 
@@ -25,6 +27,7 @@ GEMHit::GEMHit(int hitID, int apvID, int chNo,
       fHitADCs(-10000), fPeakADCs(0.0), fIntegratedADCs(0.0),
       fIsHitMaxOrTotalADCs(isHitMaxOrTotalADCs), NCH(128)
 {
+  gem_srs = fHandler -> GetSRS();
   fTimeBinADCs.clear();
 
   mapping            = PRDMapping::GetInstance();
@@ -173,6 +176,8 @@ int GEMHit::PRadStripMapping(int chNo)
 }
 
 // GEMCluster
+PRadDataHandler * GEMCluster::fHandler = nullptr;
+
 GEMCluster::GEMCluster(int minClusterSize, int maxClusterSize, TString isMaxorTotalADCs)
 
     : fNbOfHits(0), fClusterPeakTimeBin(0), fClusterTimeBin(0), 
@@ -183,6 +188,8 @@ GEMCluster::GEMCluster(int minClusterSize, int maxClusterSize, TString isMaxorTo
       fIsClusterMaxOrSumADCs(isMaxorTotalADCs), fPlane("GEM1X"),
       fIsGoodCluster(true)
 {
+  gem_srs = fHandler -> GetSRS();
+
   fArrayOfHits = new TObjArray(maxClusterSize);
 }
 
@@ -315,6 +322,8 @@ void GEMCluster::ComputeClusterPosition()
 }
 
 // GEMZeroHitDecoder
+PRadDataHandler * GEMZeroHitDecoder::fHandler = nullptr;
+
 GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
 
     : fIsGoodClusterEvent(false), fMinClusterSize(1), fMaxClusterSize(20),
@@ -323,6 +332,8 @@ GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
       fIsClusterMaxOrTotalADCs("totalADCs"), gem_data(gemdata),
       nTimeBin(3), Zgem1(5300.0), Zgem2(5260.)
 {
+  gem_srs = fHandler -> GetSRS();
+
   fMapping = PRDMapping::GetInstance();
   fListOfHitsZero.clear();
   fListOfHitsZeroFromPlane.clear();
@@ -848,11 +859,24 @@ void GEMZeroHitDecoder::GetClusterGEM(vector<PRadGEMCluster> &gem1,
 }
 
 // PRadGEMReconstructor
-PRadGEMReconstructor::PRadGEMReconstructor( PRadDataHandler *h)
-    : fHandler(h), fPRadGEMSystem(nullptr), event(nullptr),
+PRadDataHandler * PRadGEMReconstructor::fHandler = nullptr;
+
+void PRadGEMReconstructor::gSetHandler( PRadDataHandler * handler)
+{
+  GEMHit::fHandler = handler;
+  GEMCluster::fHandler = handler;
+  GEMZeroHitDecoder::fHandler = handler;
+  PRadGEMReconstructor::fHandler = handler;
+}
+
+PRadGEMReconstructor::PRadGEMReconstructor( PRadDataHandler * handler)
+    : fPRadGEMSystem(nullptr), event(nullptr),
       pDecode(nullptr), Zgem1(5300.0), Zgem2(5260), 
       Zhycal(5820.0), Match_Criteria(40.)
 {
+  gSetHandler(handler);
+  fPRadGEMSystem = fHandler -> GetSRS();
+
   fMapping = PRDMapping::GetInstance();
 
   fPRadGEMCluster.clear();
