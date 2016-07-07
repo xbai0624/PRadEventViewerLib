@@ -49,6 +49,7 @@ GEMHit::GEMHit(int hitID, int apvID, int chNo,
 GEMHit::~GEMHit()
 {
   fTimeBinADCs.clear();
+  gem_srs -> Clear();
 }
 
 void GEMHit::TimingFindPeakTimeBin() 
@@ -198,6 +199,7 @@ GEMCluster::~GEMCluster()
   fArrayOfHits->Clear();
   delete fArrayOfHits;
   fClusterTimeBinADCs.clear() ;
+  gem_srs -> Clear();
 }
 
 void GEMCluster::Timing() 
@@ -345,6 +347,7 @@ GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
 GEMZeroHitDecoder::~GEMZeroHitDecoder()
 {
   Clear();
+  gem_srs -> Clear();
 }
 
 void GEMZeroHitDecoder::Clear()
