@@ -8,7 +8,6 @@
 #include <cmath>
 
 #include <TH1F.h>
-#include <TCollection.h>
 
 #include "PRadGEMReconstructor.h"
 
