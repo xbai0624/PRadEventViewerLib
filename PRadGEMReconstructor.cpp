@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include <TH1F.h>
+#include <TCollection.h>
 
 #include "PRadGEMReconstructor.h"
 
@@ -358,6 +359,7 @@ GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
       fIsClusterMaxOrTotalADCs("totalADCs"), gem_data(gemdata),
       nTimeBin(3), Zgem1(5300.0), Zgem2(5260.)
 {
+
   SetHandler(PRadGEMReconstructor::fHandler);
   gem_srs = fHandler -> GetSRS();
 
@@ -366,6 +368,7 @@ GEMZeroHitDecoder::GEMZeroHitDecoder(vector<GEM_Data> * gemdata)
   fListOfClustersZeroFromPlane.clear();
 
   ProcessEvent();
+
 }
 
 GEMZeroHitDecoder::~GEMZeroHitDecoder()
@@ -969,10 +972,12 @@ vector<PRadGEMCluster> &PRadGEMReconstructor::Reconstruct()
   Clear();
 
   vector<GEM_Data> gem_data = event->gem_data;
-  pDecode = new GEMZeroHitDecoder(&gem_data);
+  GEMZeroHitDecoder zero_decoder(&gem_data);
+  pDecode = &zero_decoder;
   PackClusters();
   pDecode -> Clear();
   event->clear();
+
   return fPRadGEMCluster;
 }
 
@@ -1034,7 +1039,7 @@ void PRadGEMReconstructor::HyCalGEMPosMatch()
   auto hycal_hit = fHandler->GetHyCalCluster(*event);
 
   Match(gem1_beaml, gem2_beaml, &hycal_hit);
-  
+
   hycal_hit.clear();
 
   // after match
