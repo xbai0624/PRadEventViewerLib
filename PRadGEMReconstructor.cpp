@@ -1081,7 +1081,7 @@ int PRadGEMReconstructor::Match(vector<PRadGEMCluster> &gem1,
   double z_gem2 = Zgem2;
   double z_hycal = Zhycal; 
   double res = Match_Criteria; 
-  // a larger range, 60mm
+  // a larger range, res = 60mm
 
   vector<PRadGEMCluster> res_gem1;
   vector<PRadGEMCluster> res_gem2;
